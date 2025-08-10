@@ -1,0 +1,13 @@
+Needed Features
+--------------
+1. Creating and installing Minecraft servers with or without mods
+2. Listing detailed Minecraft server information (version, modloader and mods (if any))
+3. GUI
+4. Server hosting over Internet using domain
+5. New name lmao
+6. Modifying all of server config files
+7. Linux binaries
+8. macOS binaries
+9. List of popular mods that can be installed to server
+10. Auto-optimize server (install performance modpacks)
+11. Remove Herobrine

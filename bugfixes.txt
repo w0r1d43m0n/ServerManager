@@ -1,0 +1,34 @@
+Needed Bugfixes
+--------------
+1. When compiled to EXE, the exit() function seems to have broken.
+
+C:\Users\Maxwell>servermanager
+ServerManager v0.1-Pre_Release for Windows
+Type "help" for a list of commands
+> exit
+Quitting.
+Traceback (most recent call last):
+  File "ServerManager.py", line 45, in <module>
+NameError: name 'exit' is not defined
+[PYI-15212:ERROR] Failed to execute script 'ServerManager' due to unhandled exception!
+
+2. Need to store the servermgr.ini file in a default location so all instances can access it from any working directory.
+3. Need to check if script has permissions to create servermgr.ini
+
+C:\Windows>servermanager
+Welcome to ServerManager
+Where should ServerManager look for servers (full path)?: C:\MinecraftServers
+Traceback (most recent call last):
+  File "ServerManager.py", line 11, in <module>
+PermissionError: [Errno 13] Permission denied: 'servermgr.ini'
+[PYI-9720:ERROR] Failed to execute script 'ServerManager' due to unhandled exception!
+
+4. Breaks down completely if path doesn't exist
+
+C:\>servermanager
+Welcome to ServerManager
+Where should ServerManager look for servers (full path)?: thisisnotapath
+Traceback (most recent call last):
+  File "ServerManager.py", line 11, in <module>
+OSError: [Errno 22] Invalid argument: 'servermgr.ini'
+[PYI-7764:ERROR] Failed to execute script 'ServerManager' due to unhandled exception!
