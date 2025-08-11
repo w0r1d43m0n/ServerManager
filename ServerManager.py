@@ -1,30 +1,57 @@
 import os
-import shutil
-from datetime import datetime
+import sys
 import uuid
+import shutil
+from methods import *
+from datetime import datetime
+
+global configver
 
 originalCWD = os.getcwd()
-
-if not os.path.exists('servermgr.ini'):
-    print("Welcome to ServerManager")
-    serverPath = input("Where should ServerManager look for servers (full path)?: ")
-    with open('servermgr.ini', 'w+') as ini:
-        ini.write(serverPath)
-    os.system('cls')
-    print("ServerManager v0.1-Pre_Release for Windows")
-else:
-    with open('servermgr.ini', 'r') as ini:
-        lines = ini.readlines()
-        serverPath = lines[0]
-    print("ServerManager v0.1-Pre_Release for Windows")
+datafolder = f"{os.getenv("APPDATA")}\\servermgr\\"
+expectedconfigver = 2
+configver = -1
 
 try:
-    servers = next(os.walk(serverPath))[1]
+    if not os.path.exists(datafolder):
+        os.mkdir(datafolder)
 except:
-    print("Server path does not exist!")
-    os.remove("servermgr.ini")
-    print("ServerManager reset. Quitting...")
-    exit()
+    print("fatal: ServerManager doesn't have access to your AppData directory or it does not exist.")
+    print("Unrecoverable error")
+    sys.exit(1)
+
+if not os.path.exists(os.path.join(datafolder, 'servermgr.ini')):
+    print("Welcome to ServerManager")
+    serverPath = input("Where should ServerManager look for servers (full path)?: ")
+    with open(os.path.join(datafolder, 'servermgr.ini'), 'w') as ini:
+        ini.write(f"[configVer]:{expectedconfigver}\n")
+        ini.write(f"[serverPath]:{serverPath}")
+    os.system('cls')
+    print("ServerManager v0.2-Pre_Release for Windows")
+else:
+    try:
+        with open(os.path.join(datafolder, 'servermgr.ini'), 'r') as ini:
+            lines = ini.readlines()
+            configver = lines[0].replace("[configVer]:", "").replace("\n", "")
+            serverPath = lines[1].replace("[serverPath]:", "").replace("\n", "")
+            for i in [configver, serverPath]: # check if any values are empty
+                if i == "":
+                    raise IndexError() # skip to except clause
+    except IndexError as e:
+        print("fatal: ServerManager's config wasn't initialized correctly. Resetting ServerManager.")
+        os.remove(os.path.join(datafolder, 'servermgr.ini'))
+        print("ServerManager reset")
+        sys.exit(1)
+
+    print("ServerManager v0.2-Pre_Release for Windows")
+
+try:
+    servers = next(os.walk(serverPath))[1] # https://stackoverflow.com/questions/973473/getting-a-list-of-all-subdirectories-in-the-current-directory/973488#973488
+except:
+    print("fatal: server path does not exist!")
+    os.remove(os.path.join(datafolder, 'servermgr.ini'))
+    print("ServerManager reset. Quitting.")
+    sys.exit(1)
 
 print("Type \"help\" for a list of commands")
 while True:
@@ -33,20 +60,20 @@ while True:
     except KeyboardInterrupt:
         print("exit")
         print("Quitting.")
-        exit()
+        sys.exit(0)
 
     if cmd.lower() == "reset":
-        os.remove("servermgr.ini")
+        os.remove(os.path.join(datafolder, 'servermgr.ini'))
         print("ServerManager reset")
-        exit()
+        sys.exit(0)
 
     elif cmd.lower() == "exit":
         print("Quitting.")
-        exit()
+        sys.exit(0)
 
     elif cmd.lower() in ["clear", "cls"]:
         os.system("cls")
-        print("ServerManager v1.0.0 on Windows x86_64")
+        print("ServerManager v0.2-Pre_Release for Windows")
         print("Type \"help\" for a list of commands")
         continue
 
@@ -57,15 +84,24 @@ while True:
             continue
         if cmd[1] == "servers":
             for server in servers:
-                print(f"Server {server}")
-                if os.path.exists(os.path.join(serverPath, server, "start.bat")):
-                    print(f"Folder {server} does contain a Minecraft Server!")
+                if os.path.exists(os.path.join(serverPath, server, "start.bat")): # Is a compatible server
+                    print(f"Server: \"{server}\"")
+                    sys.stdout.write("Server size: Calculating...\r")
+                    sys.stdout.flush()
+                    print(f"Server size: {getFolderSize(serverPath, file_exclusions=[], folder_exclusions=["SMBackup", "Backup"], to="auto")}              ")
+                    sys.stdout.write("Backup size: Calculating...\r")
+                    sys.stdout.flush()
+                    print(f"Backup size: {getFolderSize(os.path.join(serverPath, server, "SMBackup"), to="auto")}              ")
+                    print(f"Creation date: guessed {datetime.fromtimestamp(os.path.getctime(os.path.join(serverPath, server, "start.bat"))).strftime("%I:%M %p %m/%d/%Y")}")
+                    print(f"Server version: {getMCServerVersion(os.path.join(serverPath, server))}")
+                    print(f"Server type: {getMCServerHoster(os.path.join(serverPath, server))}")
                 else:
-                    print(f"Folder {server} does NOT contain a compatible Minecraft Server.")
+                    print(f"\"{server}\" is not a Minecraft server, skipping...")
         elif cmd[1] == "config":
-            with open("servermgr.ini", 'r') as ini:
-                lines = ini.readlines()
-                print(f"Searching for servers at \"{lines[0]}\"")
+            if os.path.exists(os.path.join(datafolder, 'servermgr.ini')):
+                print(f"servermgr.ini file is located at {os.path.join(datafolder, 'servermgr.ini')}")
+                print(f"servermgr.ini file manifest version: {configver}")
+                print(f"Searching for servers at \"{serverPath}\"")
         else:
             print("Malformed command, type \"help\" for help")
     
@@ -76,7 +112,7 @@ while True:
             continue
         if cmd[1] in servers:
             print(f"Starting server \"{cmd[1]}\".")
-            os.chdir(os.path.join(serverPath, cmd[1])) # This means we can't access the config anymore.
+            os.chdir(os.path.join(serverPath, cmd[1]))
             try:
                 os.system("start.bat")
             except KeyboardInterrupt:
@@ -94,7 +130,7 @@ while True:
             continue
         if cmd[1] in servers:
             print(f"Starting backup of server \"{cmd[1]}\".")
-            os.chdir(os.path.join(serverPath, cmd[1])) # Can we access it now? (Nope)
+            os.chdir(os.path.join(serverPath, cmd[1]))
             if not os.path.exists("SMBackup"):
                 print("Folder \"SMBackup\" does not exist. Creating it.")
                 os.mkdir("SMBackup")
@@ -105,7 +141,7 @@ while True:
             try:
                 shutil.copytree(".", backupFolder, ignore=shutil.ignore_patterns("Backup", "SMBackup"))
             except Exception as e:
-                print("Fatal error! Couldn't back up server")
+                print("fatal: couldn't back up server")
                 print(f"Technical Details:\n{e}")
                 print("Reverting changes.")
                 try:
@@ -136,7 +172,7 @@ while True:
                 print("Malformed command, type \"help\" for help")
                 continue
 
-            os.chdir(os.path.join(serverPath, cmd[1])) # No, you still can't access the config!
+            os.chdir(os.path.join(serverPath, cmd[1]))
             if not os.path.exists("SMBackup"):
                 print("SMBackup folder does not exist! Can't restore backup")
                 continue
@@ -175,7 +211,6 @@ while True:
                 
                 # Fix a bug
                 try:
-                    
                     os.chdir("..")
                     os.mkdir(tempdirname)
                     os.chdir(tempdirname)
@@ -185,7 +220,7 @@ while True:
                             
                 shutil.copytree(os.path.join("..", cmd[1], "SMBackup", cmd[2]), os.path.join("..", cmd[1]), dirs_exist_ok=True)
             except Exception as e:
-                print("Fatal error! Couldn't roll back server")
+                print("fatal: couldn't roll back server")
                 print(f"Technical Details:\n{e}")
                 print("Can't revert changes.")
                 continue
@@ -197,28 +232,28 @@ while True:
             
             os.chdir(originalCWD)
         else:
-            print(f"Server \"{cmd[1]}\" doesn't exist. Are you sure you typed it correctly?")  
-            print("Restore aborted")
+            print(f"Server \"{cmd[1]}\" doesn't exist. Are you sure you typed it correctly?")
             continue
 
         continue
         
     elif cmd.lower() == "help":
-        print("reset - Factory resets ServerManager\nexit - Exit\ninfo [servers/config] - Shows information about the gives argument\n Example: info servers\nstart [serverName] - Starts the given Minecraft Server if it exists in the servers directory.\n Example: start mySMP\nbackup [serverName] - Backs up the server.\n Example: rollback mySMP\nrollback [serverName] [minutes.seconds AM/PM month.day.year]\n Example: rollback mySMP 06.05 PM 08.09.2025")
+        print("reset - Factory resets ServerManager\nexit - Exit\ninfo [servers/config] - Shows information about the gives argument\n Example: info servers\nstart [serverName] - Starts the given Minecraft Server if it exists in the servers directory.\n Example: start mySMP\nbackup [serverName] - Backs up the server.\n Example: backup mySMP\nrollback [serverName] [minutes.seconds AM/PM month.day.year]\n Example: rollback mySMP 06.05 PM 08.09.2025")
         print("\nNote: This program does NOT have the capability to CREATE servers.")
         print("This program is not a server-hosting tool.")
         print("This program is designed for Paper servers, but may work with other kinds of servers")
         continue
 
-    elif cmd.lower() in ["undertale", "determination", "chara", "asgore", "frisk", "sans", "papyrus", "alphys", "undyne", "flowey", "asriel", "toriel", "determination", "justice"]:
+    elif cmd.lower() == "test":
+        getMCServerHoster(os.path.join(serverPath, "SMP"))
+
+    elif cmd == "SaveFile0": # obligatory undertale reference
         print("-----------------------")
         print("| YOU   LV %%  ###:## |")
         print("| cmd.exe             |")
         print("|   ????     Return   |")
         print("-----------------------")
-        print("Can't access file.")
-        print("Not enough DETERMINATION")
-        
+        print("PermissionError: You are not in the .reseters file!")
 
     else:
         print("Unsupported command, type \"help\" for help")

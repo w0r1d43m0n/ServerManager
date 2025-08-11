@@ -10,4 +10,6 @@ Needed Features
 8. macOS binaries
 9. List of popular mods that can be installed to server
 10. Auto-optimize server (install performance modpacks)
-11. Remove Herobrine
+11. Add ability to back up Minecraft Servers to remote or custom directory
+12. Show progress on operations like rolling back servers, backing up, etc
+??. Remove Herobrine

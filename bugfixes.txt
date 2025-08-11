@@ -11,8 +11,11 @@ Traceback (most recent call last):
   File "ServerManager.py", line 45, in <module>
 NameError: name 'exit' is not defined
 [PYI-15212:ERROR] Failed to execute script 'ServerManager' due to unhandled exception!
+Fixed in version v0.2-Pre_Release
 
 2. Need to store the servermgr.ini file in a default location so all instances can access it from any working directory.
+(supposedly) Fixed in version v0.2-Pre_Release
+
 3. Need to check if script has permissions to create servermgr.ini
 
 C:\Windows>servermanager
@@ -22,8 +25,9 @@ Traceback (most recent call last):
   File "ServerManager.py", line 11, in <module>
 PermissionError: [Errno 13] Permission denied: 'servermgr.ini'
 [PYI-9720:ERROR] Failed to execute script 'ServerManager' due to unhandled exception!
+Fixed in version v0.2-Pre_Release
 
-4. Breaks down completely if path doesn't exist
+4. Breaks down completely if path doesn't exist ONLY WHEN COMPILED TO EXE
 
 C:\>servermanager
 Welcome to ServerManager
@@ -32,3 +36,10 @@ Traceback (most recent call last):
   File "ServerManager.py", line 11, in <module>
 OSError: [Errno 22] Invalid argument: 'servermgr.ini'
 [PYI-7764:ERROR] Failed to execute script 'ServerManager' due to unhandled exception!
+Fixed in version v0.2-Pre_Release...? Not sure what I did but it's gone now
+
+5. [Minor] Won't say command exists if typed without a space
+If typed without a space, show detailed help for that program
+
+6. [Minor] When running `info servers` the server creation date can be inaccurate if a backup was ever restored.
+The program should use the oldest file in the server folder for more accuracy
